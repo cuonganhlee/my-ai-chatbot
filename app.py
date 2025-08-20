@@ -26,9 +26,27 @@ def get_vectorstore():
     return vectorstore
 
 def get_context_retriever_chain(vector_store):
-    llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash-lite-preview-06-17", temperature=0.7, convert_system_message_to_human=True)
+    # Model này chỉ dùng để tạo câu hỏi tìm kiếm, có thể dùng model nhanh hơn
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, convert_system_message_to_human=True)
     retriever = vector_store.as_retriever()
     
+    # PROMPT ĐÚNG CHO VIỆC TẠO CÂU HỎI TÌM KIẾM
+    # Nó chỉ nhận vào 'chat_history' và 'input', không có 'context'
+    prompt = ChatPromptTemplate.from_messages([
+      MessagesPlaceholder(variable_name="chat_history"),
+      ("user", "{input}"),
+      ("user", "Dựa vào cuộc hội thoại trên, hãy tạo ra một câu hỏi tìm kiếm độc lập để có thể tìm thấy thông tin liên quan đến câu hỏi cuối cùng của người dùng.")
+    ])
+    
+    retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+    return retriever_chain
+
+def get_conversational_rag_chain(retriever_chain):
+    # Model này dùng để suy luận và trả lời, nên dùng model mạnh hơn
+    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.7, convert_system_message_to_human=True)
+    
+    # PROMPT ĐÚNG CHO VIỆC TẠO CÂU TRẢ LỜI CUỐI CÙNG
+    # Prompt này mới là nơi cần biến 'context'
     system_prompt = (
         "Bạn là một trợ lý AI chuyên nghiệp, nhiệm vụ của bạn là trả lời các câu hỏi về tài liệu nội bộ. "
         "Hãy sử dụng các đoạn văn bản được cung cấp dưới đây để trả lời câu hỏi của người dùng. "
@@ -39,21 +57,9 @@ def get_context_retriever_chain(vector_store):
         "Hãy trả lời bằng tiếng Việt.\n\n"
         "Nội dung văn bản:\n{context}"
     )
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}"),
-    ])
-    
-    retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
-    return retriever_chain
-
-def get_conversational_rag_chain(retriever_chain):
-    llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash-lite-preview-06-17", temperature=0.7, convert_system_message_to_human=True)
     
     prompt = ChatPromptTemplate.from_messages([
-      ("system", "Hãy trả lời câu hỏi của người dùng dựa vào nội dung dưới đây:\n\n{context}"),
+      ("system", system_prompt),
       MessagesPlaceholder(variable_name="chat_history"),
       ("user", "{input}"),
     ])
