@@ -28,7 +28,7 @@ def get_vectorstore():
 def get_context_retriever_chain(vector_store):
     # Model này chỉ dùng để tạo câu hỏi tìm kiếm, có thể dùng model nhanh hơn
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite-preview-06-17", temperature=0, convert_system_message_to_human=True)
-    retriever = vector_store.as_retriever()
+    retriever = vector_store.as_retriever(search_kwargs={"k": 30})
     
     # PROMPT ĐÚNG CHO VIỆC TẠO CÂU HỎI TÌM KIẾM
     # Nó chỉ nhận vào 'chat_history' và 'input', không có 'context'
