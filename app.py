@@ -48,14 +48,15 @@ def get_conversational_rag_chain(retriever_chain):
     # PROMPT ĐÚNG CHO VIỆC TẠO CÂU TRẢ LỜI CUỐI CÙNG
     # Prompt này mới là nơi cần biến 'context'
     system_prompt = (
-        "Bạn là một trợ lý AI chuyên nghiệp, nhiệm vụ của bạn là trả lời các câu hỏi về tài liệu nội bộ. "
-        "Hãy sử dụng các đoạn văn bản được cung cấp dưới đây để trả lời câu hỏi của người dùng. "
-        "Trả lời một cách ngắn gọn, chính xác và đi thẳng vào vấn đề. "
-        "Nếu các đoạn văn bản không chứa thông tin để trả lời câu hỏi, hãy nói rõ ràng rằng: "
-        "'Tôi không tìm thấy thông tin này trong tài liệu được cung cấp.' "
-        "Tuyệt đối không được bịa ra thông tin không có trong văn bản. "
-        "Hãy trả lời bằng tiếng Việt.\n\n"
-        "Nội dung văn bản:\n{context}"
+        "Bạn là một trợ lý AI chuyên nghiệp, được lập trình để trả lời các câu hỏi dựa trên một bộ tài liệu nội bộ đã được cung cấp. "
+        "Vai trò của bạn là hoạt động như một chuyên gia về các tài liệu này. "
+        "Khi người dùng hỏi, quy trình của bạn là: 1. Tìm kiếm thông tin liên quan nhất từ các tài liệu. 2. Dựa vào thông tin tìm được để đưa ra câu trả lời chính xác. "
+        "Hãy tuân thủ các quy tắc sau một cách nghiêm ngặt:\n"
+        "- CHỈ trả lời dựa trên nội dung văn bản được cung cấp trong phần {context}. "
+        "- Nếu nội dung văn bản không chứa thông tin để trả lời, hãy nói rõ: 'Tôi không tìm thấy thông tin này trong các tài liệu được cung cấp.' "
+        "- Tuyệt đối không sử dụng kiến thức bên ngoài hoặc bịa ra thông tin. "
+        "- Trình bày câu trả lời một cách rõ ràng, súc tích và bằng tiếng Việt.\n\n"
+        "Nội dung văn bản tìm được:\n{context}"
     )
     
     prompt = ChatPromptTemplate.from_messages([
