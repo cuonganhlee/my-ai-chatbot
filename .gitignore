@@ -11,3 +11,8 @@ __pycache__/
 
 # Thư mục cache của VSCode
 .vscode/
+
+# Bỏ qua thư mục chứa dữ liệu nguồn
+data/
+data copy2/
+data gốc/
