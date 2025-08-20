@@ -111,5 +111,80 @@ def main():
     user_question = st.chat_input("Hãy hỏi tôi bất cứ điều gì về tài liệu của bạn:")
 
     if user_question:
-        # ... (toàn bộ logic xử lý câu hỏi, chế độ admin, và hiển thị context giữ nguyên như cũ) ...
-        # ... (copy phần đó từ phiên bản code trước của bạn) ...
+        # Thêm câu hỏi của người dùng vào lịch sử và hiển thị ngay lập tức
+        st.session_state.chat_history.append(HumanMessage(content=user_question))
+        with st.chat_message("user"):
+            st.markdown(user_question)
+
+        # Hiển thị icon "đang suy nghĩ"
+        with st.spinner("Gemini đang suy nghĩ..."):
+            
+            # --- LOGIC CHUYỂN ĐỔI CHẾ ĐỘ ---
+            if ADMIN_KEYWORD in user_question.lower():
+                st.info(f"Đã kích hoạt chế độ Admin! Bỏ qua ngữ cảnh tài liệu.", icon="🔑")
+                
+                # Xóa từ khóa khỏi câu hỏi để không làm nhiễu model
+                actual_question = user_question.lower().replace(ADMIN_KEYWORD, "").strip()
+                
+                # Tạo prompt đơn giản cho chế độ chat thông thường
+                admin_prompt = ChatPromptTemplate.from_messages([
+                    ("system", "Bạn là một trợ lý AI hữu ích. Hãy trả lời câu hỏi của người dùng một cách toàn diện."),
+                    MessagesPlaceholder(variable_name="chat_history"),
+                    ("user", "{input}")
+                ])
+                
+                # Tạo một chuỗi xử lý đơn giản chỉ gồm prompt và LLM
+                admin_chain = admin_prompt | admin_llm
+                
+                response = admin_chain.invoke({
+                    "chat_history": st.session_state.chat_history,
+                    "input": actual_question
+                })
+                # Lấy nội dung từ response của model
+                bot_response = response.content
+
+            else: # Chế độ RAG mặc định
+                response = conversation_rag_chain.invoke({
+                    "chat_history": st.session_state.chat_history,
+                    "input": user_question
+                })
+                bot_response = response['answer']
+                
+                # --- TÍNH NĂNG DEBUG NGỮ CẢNH NÂNG CAO ---
+                with st.expander("Xem chi tiết quá trình truy xuất", expanded=False):
+                    # Lấy danh sách các tài liệu nguồn từ context
+                    source_documents = response.get('context', [])
+                    
+                    # Đếm số lượng chunk
+                    num_chunks = len(source_documents)
+                    
+                    # Hiển thị thông báo
+                    st.info(f"Đã truy xuất được **{num_chunks} chunk** từ Pinecone để làm ngữ cảnh.", icon="ℹ️")
+                    
+                    st.write("---") # Thêm một đường kẻ phân cách
+
+                    # Lặp qua và hiển thị từng chunk
+                    for i, doc in enumerate(source_documents):
+                        st.subheader(f"Chunk #{i + 1}")
+                        
+                        # Cố gắng lấy tên file từ metadata
+                        source = doc.metadata.get('source', 'Không rõ nguồn')
+                        file_name = os.path.basename(source)
+                        st.write(f"**Nguồn:** `{file_name}`")
+                        
+                        # Hiển thị nội dung của chunk
+                        st.text_area(
+                            label=f"Nội dung chunk {i + 1}", 
+                            value=doc.page_content, 
+                            height=200, 
+                            key=f"chunk_{i}" # Key duy nhất cho mỗi text_area
+                        )
+                        st.write("---")
+
+        # Thêm câu trả lời của bot vào lịch sử và hiển thị
+        st.session_state.chat_history.append(AIMessage(content=bot_response))
+        with st.chat_message("assistant"):
+            st.markdown(bot_response)
+
+if __name__ == '__main__':
+    main()
