@@ -90,7 +90,7 @@ def main():
         conversation_rag_chain = get_conversational_rag_chain(retriever_chain)
         st.write("✅ Đã tạo RAG Chain thành công.")
         
-        admin_llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.7)
+        admin_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite-preview-06-17", temperature=0.7)
         st.write("✅ Đã khởi tạo Admin LLM thành công.")
         
         st.success("Tất cả các thành phần đã được khởi tạo thành công!")
