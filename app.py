@@ -27,7 +27,7 @@ def get_vectorstore():
 
 def get_context_retriever_chain(vector_store):
     # Model này chỉ dùng để tạo câu hỏi tìm kiếm, có thể dùng model nhanh hơn
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, convert_system_message_to_human=True)
+    llm = ChatGoogleGenerativeAI(model="gemini 2.5 Pro", temperature=0, convert_system_message_to_human=True)
     retriever = vector_store.as_retriever()
     
     # PROMPT ĐÚNG CHO VIỆC TẠO CÂU HỎI TÌM KIẾM
@@ -43,7 +43,7 @@ def get_context_retriever_chain(vector_store):
 
 def get_conversational_rag_chain(retriever_chain):
     # Model này dùng để suy luận và trả lời, nên dùng model mạnh hơn
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.7, convert_system_message_to_human=True)
+    llm = ChatGoogleGenerativeAI(model="gemini 2.5 Pro", temperature=0.7, convert_system_message_to_human=True)
     
     # PROMPT ĐÚNG CHO VIỆC TẠO CÂU TRẢ LỜI CUỐI CÙNG
     # Prompt này mới là nơi cần biến 'context'
