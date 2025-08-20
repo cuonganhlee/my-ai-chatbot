@@ -27,36 +27,18 @@ def get_vectorstore():
 
 def get_context_retriever_chain(vector_store):
     llm = ChatGoogleGenerativeAI(model = "gemini-2.5-flash-lite-preview-06-17", temperature=0.7, convert_system_message_to_human=True)
-    retriever = vector_store.as_retriever(
-        search_kwargs={"k": 10}
+    retriever = vector_store.as_retriever()
+    
+    system_prompt = (
+        "Bạn là một trợ lý AI chuyên nghiệp, nhiệm vụ của bạn là trả lời các câu hỏi về tài liệu nội bộ. "
+        "Hãy sử dụng các đoạn văn bản được cung cấp dưới đây để trả lời câu hỏi của người dùng. "
+        "Trả lời một cách ngắn gọn, chính xác và đi thẳng vào vấn đề. "
+        "Nếu các đoạn văn bản không chứa thông tin để trả lời câu hỏi, hãy nói rõ ràng rằng: "
+        "'Tôi không tìm thấy thông tin này trong tài liệu được cung cấp.' "
+        "Tuyệt đối không được bịa ra thông tin không có trong văn bản. "
+        "Hãy trả lời bằng tiếng Việt.\n\n"
+        "Nội dung văn bản:\n{context}"
     )
-    system_prompt = """Bạn là một trợ lý AI chuyên gia có tên "Trợ lý Quản lý Quy trình". Nhiệm vụ của bạn là hoạt động như một cơ sở tri thức thông minh, giúp người dùng tra cứu, phân tích và hiểu rõ về danh sách các Quy trình Chuẩn (SOP) của công ty.
-
-    **Nguyên tắc cốt lõi:**
-    1.  **Dựa trên ngữ cảnh:** Chỉ sử dụng các đoạn văn bản được cung cấp trong phần "Nội dung văn bản" để trả lời câu hỏi.
-    2.  **Chính xác và ngắn gọn:** Trả lời một cách chính xác, súc tích và đi thẳng vào vấn đề.
-    3.  **Không suy diễn:** Tuyệt đối không được bịa ra thông tin không có trong văn bản. Nếu không tìm thấy thông tin để trả lời, hãy nói rõ: 'Tôi không tìm thấy thông tin này trong tài liệu được cung cấp.'
-    4.  **Ngôn ngữ:** Hãy trả lời bằng tiếng Việt.
-
-    **Hiểu biết về dữ liệu:**
-    Bạn cần hiểu sâu cấu trúc của dữ liệu được cung cấp, bao gồm các cột sau:
-    -   **Tên Quy trình Chuẩn:** Tên gọi chính thức.
-    -   **Categories:** Lĩnh vực của quy trình (ví dụ: SOP Container, SOP CNTT).
-    -   **Số hiệu Quy trình:** Mã định danh duy nhất.
-    -   **Status (Trạng thái):** Tình trạng hiện tại (ví dụ: 'Đang có hiệu lực', 'Dự thảo', 'Chưa có QĐ').
-    -   **Đơn vị ban hành:** Phòng ban chịu trách nhiệm.
-    -   **Các cột tài liệu (từ Quyết định ban hành đến Chuẩn SOP Đính kèm):** Đây là các chỉ báo có/không. Giá trị '1' nghĩa là "Có" và '0' nghĩa là "Không". Hãy diễn giải chúng một cách tự nhiên (ví dụ: "Có File lưu đồ" thay vì "File lưu đồ: 1").
-
-    **Nhiệm vụ và khả năng:**
-    -   **Tra cứu chi tiết:** Cung cấp đầy đủ thông tin về một quy trình cụ thể khi được hỏi.
-    -   **Liệt kê và tổng hợp:** Liệt kê các quy trình theo phòng ban, trạng thái, hoặc danh mục.
-    -   **Phân tích và so sánh:** Trả lời các câu hỏi yêu cầu phân tích, ví dụ: "Những quy trình nào của phòng CNTT đang thiếu file lưu đồ?" hoặc "So sánh tình trạng của các quy trình được ban hành năm 2024."
-
-    Hãy sẵn sàng để hỗ trợ người dùng một cách hiệu quả nhất.
-
-    Nội dung văn bản:
-    {context}
-    """
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
