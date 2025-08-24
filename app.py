@@ -11,7 +11,7 @@ from langchain.chains import create_history_aware_retriever, create_retrieval_ch
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
-
+from langchain.retrievers.multi_query import MultiQueryRetriever
 load_dotenv()
 
 # --- PHẦN LOGIC (Cập nhật hoàn toàn theo cú pháp mới) ---
@@ -26,20 +26,40 @@ def get_vectorstore():
     return vectorstore
 
 def get_context_retriever_chain(vector_store):
-    # Model này chỉ dùng để tạo câu hỏi tìm kiếm, có thể dùng model nhanh hơn
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite-preview-06-17", temperature=0, convert_system_message_to_human=True)
-    retriever = vector_store.as_retriever(search_kwargs={"k": 30})
+    # Model này sẽ được dùng để tạo ra các câu hỏi con
+    # Nên dùng model nhanh và rẻ
+    llm_question_generator = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash-lite-preview-06-17", 
+        temperature=0
+    )
     
-    # PROMPT ĐÚNG CHO VIỆC TẠO CÂU HỎI TÌM KIẾM
-    # Nó chỉ nhận vào 'chat_history' và 'input', không có 'context'
+    # Retriever gốc của bạn, mỗi câu hỏi con sẽ lấy 5 kết quả
+    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+
+    # Khởi tạo MultiQueryRetriever
+    # Nó sẽ tự động sử dụng llm_question_generator để tạo câu hỏi
+    multi_query_retriever = MultiQueryRetriever.from_llm(
+        retriever=retriever, 
+        llm=llm_question_generator
+    )
+
+    # Prompt này vẫn dùng để tạo câu hỏi tìm kiếm từ lịch sử chat
+    # Nhưng bây giờ nó sẽ được đưa vào multi_query_retriever
     prompt = ChatPromptTemplate.from_messages([
       MessagesPlaceholder(variable_name="chat_history"),
       ("user", "{input}"),
       ("user", "Dựa vào cuộc hội thoại trên, hãy tạo ra một câu hỏi tìm kiếm độc lập để có thể tìm thấy thông tin liên quan đến câu hỏi cuối cùng của người dùng.")
     ])
     
-    retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
-    return retriever_chain
+    # create_history_aware_retriever vẫn hoạt động tốt với multi_query_retriever
+    # vì cả hai đều là đối tượng "retriever"
+    history_aware_retriever = create_history_aware_retriever(
+        llm_question_generator, 
+        multi_query_retriever, # <-- THAY ĐỔI QUAN TRỌNG
+        prompt
+    )
+    
+    return history_aware_retriever
 
 def get_conversational_rag_chain(retriever_chain):
     # Model này dùng để suy luận và trả lời, nên dùng model mạnh hơn
